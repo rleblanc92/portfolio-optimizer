@@ -1,0 +1,13 @@
+numpy<2
+scipy
+scikit-learn
+numba
+tqdm
+yfinance
+pandas
+quantstats
+pydantic
+aiosqlite
+python-dotenv
+google-genai
+openai
