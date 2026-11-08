@@ -20,10 +20,10 @@ Accès direct aux rapports interactifs complets hébergés sur GitHub Pages :
 
 | Scénario / Univers | Horizon | Objectif d'analyse | Rapport interactif |
 | :--- | :--- | :--- | :--- |
-| **US MegaTech** | 2015 – 2023 | Régime haussier et concentration technologique | [Ouvrir le Tearsheet ↗](https://<username>.github.io/<repo>/tearsheet_US_MegaTech_2015_2023.html) |
-| **Crash Covid & Rebond** | 2020 – 2021 | Choc de volatilité et récupération rapide | [Ouvrir le Tearsheet ↗](https://<username>.github.io/<repo>/tearsheet_Covid_2020_2021.html) |
-| **Crise Financière (GFC)** | 2007 – 2009 | Résistance en marché baissier sévère et risque de queue | [Ouvrir le Tearsheet ↗](https://<username>.github.io/<repo>/tearsheet_GFC_2007_2009.html) |
-| **Multi-Asset Global** | 2024 | Diversification multi-classes d'actifs et régimes macro | [Ouvrir le Tearsheet ↗](https://<username>.github.io/<repo>/tearsheet_MultiAsset_2024.html) |
+| **US MegaTech** | 2015 – 2023 | Régime haussier et concentration technologique | [Ouvrir le Tearsheet ↗](https://rleblanc92.github.io/portfolio-optimizer/tearsheet_US_MegaTech_2015_2023.html) |
+| **Crash Covid & Rebond** | 2020 – 2021 | Choc de volatilité et récupération rapide | [Ouvrir le Tearsheet ↗](https://rleblanc92.github.io/portfolio-optimizer/tearsheet_Covid_2020_2021.html) |
+| **Crise Financière (GFC)** | 2007 – 2009 | Résistance en marché baissier sévère et risque de queue | [Ouvrir le Tearsheet ↗](https://rleblanc92.github.io/portfolio-optimizer/tearsheet_GFC_2007_2009.html) |
+| **Multi-Asset Global** | 2024 | Diversification multi-classes d'actifs et régimes macro | [Ouvrir le Tearsheet ↗](https://rleblanc92.github.io/portfolio-optimizer/tearsheet_MultiAsset_2024.html) |
 
 
 Conçu pour répliquer les contraintes d'exécution réelles en salle des marchés, le moteur modélise explicitement :

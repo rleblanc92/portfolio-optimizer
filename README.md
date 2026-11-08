@@ -20,10 +20,10 @@ Direct access to interactive QuantStats tearsheets via GitHub Pages:
 
 | Scenario / Universe | Time Horizon | Key Focus | Interactive Report |
 | :--- | :--- | :--- | :--- |
-| **US MegaTech** | 2015 – 2023 | Tech momentum & high concentration | [View Tearsheet ↗](https://<username>.github.io/<repo>/tearsheet_US_MegaTech_2015_2023.html) |
-| **Covid Crash & Recovery** | 2020 – 2021 | Extreme volatility & sharp drawdown shock | [View Tearsheet ↗](https://<username>.github.io/<repo>/tearsheet_Covid_2020_2021.html) |
-| **Global Financial Crisis (GFC)** | 2007 – 2009 | Prolonged bear market & tail-risk behavior | [View Tearsheet ↗](https://<username>.github.io/<repo>/tearsheet_GFC_2007_2009.html) |
-| **Global Multi-Asset** | 2024 | Cross-asset diversification & macro regime | [View Tearsheet ↗](https://<username>.github.io/<repo>/tearsheet_MultiAsset_2024.html) |
+| **US MegaTech** | 2015 – 2023 | Tech momentum & high concentration | [View Tearsheet ↗](https://rleblanc92.github.io/portfolio-optimizer/tearsheet_US_MegaTech_2015_2023.html) |
+| **Covid Crash & Recovery** | 2020 – 2021 | Extreme volatility & sharp drawdown shock | [View Tearsheet ↗](https://rleblanc92.github.io/portfolio-optimizer/tearsheet_Covid_2020_2021.html) |
+| **Global Financial Crisis (GFC)** | 2007 – 2009 | Prolonged bear market & tail-risk behavior | [View Tearsheet ↗](https://rleblanc92.github.io/portfolio-optimizer/tearsheet_GFC_2007_2009.html) |
+| **Global Multi-Asset** | 2024 | Cross-asset diversification & macro regime | [View Tearsheet ↗](https://rleblanc92.github.io/portfolio-optimizer/tearsheet_MultiAsset_2024.html) |
 
 
 Designed to replicate real-world trading desk execution constraints, the engine explicitly models:
