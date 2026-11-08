@@ -4,17 +4,27 @@
 
 # Moteur d'Optimisation de Portefeuille Multi-Objectifs & Backtesting Systématique
 
-**Auteur et Concepteur :** Robin Leblanc
+**Auteur :** Robin Leblanc
 
-**Version :** 2.0.0
-
-**Stack Technique :** Python 3.8+ | NumPy | Numba JIT (`@njit`) | SciPy | Scikit-Learn | Pandas | QuantStats | Pytest | Pydantic
+**Stack :** Python 3.8+ | NumPy | Numba JIT | SciPy | Scikit-Learn | Pandas | QuantStats | Pytest | Pydantic
 
 ---
 
 ## 1. Vue d'Ensemble & Architecture
 
 Ce projet implémente un moteur quantitatif d'allocation d'actifs et de backtesting *Out-of-Sample* combinant une métaheuristique génétique multi-objectifs compilée en code machine via **Numba LLVM (`@njit`)**, des méthodes d'optimisation convexe classiques (Newton-Raphson, SLSQP) et une couche d'agents LLM asynchrones pour la détection de régimes macroéconomiques et l'analyse de sentiment.
+
+## 📊 Rapports de Backtest (Tearsheets QuantStats)
+
+Accès direct aux rapports interactifs complets hébergés sur GitHub Pages :
+
+| Scénario / Univers | Horizon | Objectif d'analyse | Rapport interactif |
+| :--- | :--- | :--- | :--- |
+| **US MegaTech** | 2015 – 2023 | Régime haussier et concentration technologique | [Ouvrir le Tearsheet ↗](https://<username>.github.io/<repo>/tearsheet_US_MegaTech_2015_2023.html) |
+| **Crash Covid & Rebond** | 2020 – 2021 | Choc de volatilité et récupération rapide | [Ouvrir le Tearsheet ↗](https://<username>.github.io/<repo>/tearsheet_Covid_2020_2021.html) |
+| **Crise Financière (GFC)** | 2007 – 2009 | Résistance en marché baissier sévère et risque de queue | [Ouvrir le Tearsheet ↗](https://<username>.github.io/<repo>/tearsheet_GFC_2007_2009.html) |
+| **Multi-Asset Global** | 2024 | Diversification multi-classes d'actifs et régimes macro | [Ouvrir le Tearsheet ↗](https://<username>.github.io/<repo>/tearsheet_MultiAsset_2024.html) |
+
 
 Conçu pour répliquer les contraintes d'exécution réelles en salle des marchés, le moteur modélise explicitement :
 

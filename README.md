@@ -4,17 +4,27 @@
 
 # Multi-Objective Portfolio Optimization Engine & Systematic Backtesting
 
-**Author & Designer:** Robin Leblanc
+**Author :** Robin Leblanc
 
-**Version:** 2.0.0
-
-**Tech Stack:** Python 3.8+ | NumPy | Numba JIT (`@njit`) | SciPy | Scikit-Learn | Pandas | QuantStats | Pytest | Pydantic
+**Stack:** Python 3.8+ | NumPy | Numba JIT | SciPy | Scikit-Learn | Pandas | QuantStats | Pytest | Pydantic
 
 ---
 
 ## 1. Overview & Architecture
 
 This project implements a quantitative asset allocation and Out-of-Sample backtesting engine combining a multi-objective genetic metaheuristic compiled to machine code via **Numba LLVM (`@njit`)**, classical convex optimization benchmarks (Newton-Raphson, SLSQP), and an asynchronous LLM agent layer for macroeconomic regime detection and sentiment analysis.
+
+## Backtest Reports (QuantStats Tearsheets)
+
+Direct access to interactive QuantStats tearsheets via GitHub Pages:
+
+| Scenario / Universe | Time Horizon | Key Focus | Interactive Report |
+| :--- | :--- | :--- | :--- |
+| **US MegaTech** | 2015 – 2023 | Tech momentum & high concentration | [View Tearsheet ↗](https://<username>.github.io/<repo>/tearsheet_US_MegaTech_2015_2023.html) |
+| **Covid Crash & Recovery** | 2020 – 2021 | Extreme volatility & sharp drawdown shock | [View Tearsheet ↗](https://<username>.github.io/<repo>/tearsheet_Covid_2020_2021.html) |
+| **Global Financial Crisis (GFC)** | 2007 – 2009 | Prolonged bear market & tail-risk behavior | [View Tearsheet ↗](https://<username>.github.io/<repo>/tearsheet_GFC_2007_2009.html) |
+| **Global Multi-Asset** | 2024 | Cross-asset diversification & macro regime | [View Tearsheet ↗](https://<username>.github.io/<repo>/tearsheet_MultiAsset_2024.html) |
+
 
 Designed to replicate real-world trading desk execution constraints, the engine explicitly models:
 
