@@ -104,7 +104,7 @@ where:
 * **Annualized Variance:** $w^\top \Sigma_{\text{LW}} w$ (or empirical variance of daily portfolio returns scaled by $252$ if no precomputed matrix is provided).
 * **Standardized Skewness:** $S_3(w) = \frac{M_3(r_p)}{\sigma_p^3}$ weighted by $\lambda_{\text{skew}} = 0.05$ to reward positive upside asymmetry.
 * **Excess Kurtosis:** $K_4(w) = \frac{M_4(r_p)}{\sigma_p^4} - 3$ weighted by $\lambda_{\text{kurt}} = 0.01$ to penalize fat-tail risk.
-* **L1 Turnover Penalty + L2 Quadratic Impact:** $\lambda_{\text{TO}} = \text{TRANSACTION\_FEE} \times \frac{252}{\text{REBALANCE\_FREQ}}$ captures both proportional execution fees ($T$) and non-linear permanent market impact ($0.1 T^2$).
+* **L1 Turnover Penalty + L2 Quadratic Impact:** $\lambda_{\text{TO}} = \text{TRANSACTION\_FEE} \times \frac{252}{\text{REBALANCE\_FREQ}}$ captures both proportional execution fees ($T$) and non-linear permanent market impact ($0.1T^2$).
 
 ---
 

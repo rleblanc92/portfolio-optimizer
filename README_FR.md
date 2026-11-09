@@ -136,7 +136,8 @@ où :
 * **Kurtosis en excès (*Excess Kurtosis*) :** $K_4(w) = \frac{M_4(r_p)}{\sigma_p^4} - 3$ pondérée par $\lambda_{\text{kurt}} = 0.01$ pour pénaliser le risque de queue (*tail risk*).
 
 
-* **Pénalité de Turnover L1 + Impact Quadratique L2 :** $\lambda_{\text{TO}} = \text{TRANSACTION\_FEE} \times \frac{252}{\text{REBALANCE\_FREQ}}$ modélise à la fois les frais proportionnels de courtage/spread ($T$) et l'impact de marché non-linéaire ($0.1 T^2$).
+* **Pénalité de Turnover L1 + Impact Quadratique L2 :** $\lambda_{\text{TO}} = \text{TRANSACTION\_FEE} \times \frac{252}{\text{REBALANCE\_FREQ}}$ 
+{\text{REBALANCE\_FREQ}}$ modélise à la fois les frais proportionnels de courtage/spread ($T$) et l'impact de marché non-linéaire ($0.1 T^2$).
 
 
 
