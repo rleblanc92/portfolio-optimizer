@@ -14,7 +14,7 @@
 
 Ce projet implémente un moteur quantitatif d'allocation d'actifs et de backtesting *Out-of-Sample* combinant une métaheuristique génétique multi-objectifs compilée en code machine via **Numba LLVM (`@njit`)**, des méthodes d'optimisation convexe classiques (Newton-Raphson, SLSQP) et une couche d'agents LLM asynchrones pour la détection de régimes macroéconomiques et l'analyse de sentiment.
 
-## 🎯 Genèse du Projet & Démarche
+## Genèse du Projet & Démarche
 
 Construire un portefeuille financier consiste à répartir un capital entre différents actifs (actions, obligations, or, matières premières) afin de maximiser les gains tout en minimisant les risques. Depuis les années 1950, la finance quantitative s'appuie sur le modèle classique de **Markowitz (Moyenne-Variance)**. Bien qu'élégant sur le papier, ce modèle se heurte aux contraintes réelles d'une salle de marché :
 

@@ -14,7 +14,7 @@
 
 This project implements a quantitative asset allocation and Out-of-Sample backtesting engine combining a multi-objective genetic metaheuristic compiled to machine code via **Numba LLVM (`@njit`)**, classical convex optimization benchmarks (Newton-Raphson, SLSQP), and an asynchronous LLM agent layer for macroeconomic regime detection and sentiment analysis.
 
-## 🎯 Project Genesis & Motivation
+## Project Genesis & Motivation
 
 Portfolio optimization is the art of allocating capital across diverse assets (equities, bonds, gold, commodities) to maximize returns while minimizing risk. Since the 1950s, quantitative finance has relied on **Markowitz's Modern Portfolio Theory (Mean-Variance)**. While theoretically elegant, this classical framework breaks down when confronted with real-world trading desk constraints:
 
