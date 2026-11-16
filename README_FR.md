@@ -14,6 +14,18 @@
 
 Ce projet implémente un moteur quantitatif d'allocation d'actifs et de backtesting *Out-of-Sample* combinant une métaheuristique génétique multi-objectifs compilée en code machine via **Numba LLVM (`@njit`)**, des méthodes d'optimisation convexe classiques (Newton-Raphson, SLSQP) et une couche d'agents LLM asynchrones pour la détection de régimes macroéconomiques et l'analyse de sentiment.
 
+## 🎯 Genèse du Projet & Démarche
+
+Construire un portefeuille financier consiste à répartir un capital entre différents actifs (actions, obligations, or, matières premières) afin de maximiser les gains tout en minimisant les risques. Depuis les années 1950, la finance quantitative s'appuie sur le modèle classique de **Markowitz (Moyenne-Variance)**. Bien qu'élégant sur le papier, ce modèle se heurte aux contraintes réelles d'une salle de marché :
+
+1. **La non-linéarité du monde réel :** Dès que l'on intègre les frictions d'exécution — frais de courtage proportionnels, impact de marché quadratique, coûts de financement du levier ou de la vente à découvert (*short*) — ainsi que la protection contre le risque extrême (optimisation des moments d'ordre supérieur comme la skewness et le kurtosis), la surface d'optimisation devient irrégulière et non convexe. Les solveurs classiques basés sur les dérivées (comme Newton-Raphson ou SLSQP) peuvent se retrouver piégés dans des minima locaux et manquer de meilleures allocations sous ces contraintes combinées.
+2. **La cécité purement statistique :** Les modèles purement statistiques ne regardent que dans le rétroviseur (les séries de prix historiques). Ils sont structurellement aveugles aux ruptures soudaines de régimes macroéconomiques (ex. : passage en stagflation) ou aux chocs d'actualité tant que ceux-ci ne se sont pas déjà matérialisés en pertes sévères et en changements de la matrice de covariance.
+
+**La démarche de ce moteur est née de la volonté de dépasser ces deux limites en combinant trois disciplines :**
+* **L'exploration évolutionnaire (Algorithme Génétique) :** Plutôt que de s'appuyer sur des gradients mathématiques lisses qui ne décrivent plus le problème sous contraintes réalistes, le moteur s'inspire de la sélection naturelle. À chaque rebalancement, il démarre avec une population de 800 portefeuilles candidats, évalue leur fitness selon cinq composantes, croise les meilleurs profils et mute les poids sur jusqu'à 1 000 générations afin de rechercher de bonnes allocations sous les contraintes du modèle.
+* **L'ingénierie logicielle haute performance (Compilation Numba LLVM) :** Évaluer jusqu'à 800 000 portefeuilles candidats par rebalancement en Python interprété serait coûteux en calcul. Pour rendre la recherche stochastique viable sur un backtest pluriannuel, le cœur évolutionnaire est compilé en code machine natif via Numba (`@njit`), avec une évaluation vectorisée de la population et des opérations évolutionnaires.
+* **L'intelligence contextuelle (Surcouche d'agents LLM asynchrones) :** Pour éviter que l'optimiseur ne s'appuie que sur les prix historiques, des agents LLM asynchrones peuvent intégrer en amont des indicateurs macroéconomiques et des nouvelles de marché. Ils ne choisissent pas directement les poids — tâche qui relève de l'optimisation numérique — mais forment une couche de paramétrage dynamique, ajustant l'aversion au risque et les rendements attendus avant de passer le relais au moteur génétique compilé.
+
 ## 📊 Rapports de Backtest (Tableaux de bord institutionnels sur mesure)
 
 Accès direct aux rapports interactifs complets hébergés sur GitHub Pages :
