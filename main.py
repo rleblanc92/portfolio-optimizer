@@ -12,12 +12,9 @@ import pandas as pd
 import os
 import re
 import shutil
-import quantstats as qs
 from datetime import datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
-
-qs.extend_pandas()
 
 import config
 from market_data import (
@@ -42,8 +39,10 @@ from classic_optimization import (
 from llm_agents import analyze_macro_regime
 from scenarios import SCENARIOS
 from logging_utils import configure_logging, get_logger
+from reporting import generate_institutional_report
 
 logger = get_logger(__name__)
+
 
 def calculate_annual_returns(portfolio_values, trading_days=252):
     """
@@ -208,8 +207,17 @@ def generate_quantstats_tearsheet(
     scenario_name=None,
     rf=0.0,
     output_filename: str | None = None,
+    strategy_returns=None,
+    benchmark_returns=None,
+    weights_history=None,
+    rebalance_dates=None,
+    turnover_history=None,
+    transaction_costs=None,
+    transaction_cost_drag_bps_yr=None,
+    margin_financing_drag_bps_yr=None,
+    benchmark_name=None,
 ):
-    """Generate a QuantStats tear sheet for the out-of-sample period."""
+    """Backward-compatible entry point for the institutional OOS dashboard."""
     if oos_length <= 0:
         return
 
@@ -234,10 +242,18 @@ def generate_quantstats_tearsheet(
         index=nav_dates,
         name='benchmark',
     )
-    returns_ga = nav_ga.pct_change().dropna()
-    returns_benchmark = nav_benchmark.pct_change().dropna()
+    returns_ga = (
+        np.asarray(strategy_returns, dtype=np.float64)
+        if strategy_returns is not None
+        else nav_ga.pct_change().dropna().to_numpy()
+    )
+    returns_benchmark = (
+        np.asarray(benchmark_returns, dtype=np.float64)
+        if benchmark_returns is not None
+        else nav_benchmark.pct_change().dropna().to_numpy()
+    )
 
-    if returns_ga.empty or returns_benchmark.empty:
+    if len(returns_ga) == 0 or len(returns_benchmark) == 0:
         return
 
     if output_filename is not None:
@@ -248,28 +264,34 @@ def generate_quantstats_tearsheet(
     else:
         output = Path('outputs/tearsheets/best_strategy_tearsheet.html')
     output.parent.mkdir(parents=True, exist_ok=True)
-    if scenario_name == 'Global_MultiAsset_2024':
-        title = 'Global MultiAsset 2024 - Out-of-Sample'
-    else:
-        label = scenario_name or 'Portfolio'
-        title = f'{label} - Out-of-Sample'
-    import matplotlib.pyplot as plt
-    try:
-        qs.reports.html(
-            returns_ga,
-            benchmark=returns_benchmark,
-            rf=rf,
-            output=str(output),
-            title=title,
-        )
-    finally:
-        plt.close('all')
+    report_dates = nav_dates[1:]
+    if len(report_dates) != len(returns_ga):
+        report_dates = pd.DatetimeIndex(dates[-len(returns_ga):])
+    generate_institutional_report(
+        returns_ga,
+        returns_benchmark,
+        report_dates,
+        scenario_name=scenario_name or 'Portfolio',
+        benchmark_name=benchmark_name or 'Benchmark',
+        risk_free_rate=rf,
+        output_path=output,
+        weights_history=weights_history,
+        rebalance_dates=rebalance_dates,
+        turnover_history=turnover_history,
+        transaction_costs=transaction_costs,
+        transaction_cost_drag_bps_yr=transaction_cost_drag_bps_yr,
+        margin_financing_drag_bps_yr=margin_financing_drag_bps_yr,
+    )
 
     if scenario_name is not None and output.is_file():
         safe_scenario_name = re.sub(r'[^A-Za-z0-9_.-]', '_', str(scenario_name))
         scenario_output = Path('outputs/tearsheets') / f'tearsheet_{safe_scenario_name}.html'
         if output != scenario_output:
             shutil.copyfile(output, scenario_output)
+        docs_output = Path('docs') / f'tearsheet_{safe_scenario_name}.html'
+        docs_output.parent.mkdir(parents=True, exist_ok=True)
+        if output != docs_output:
+            shutil.copyfile(output, docs_output)
 
 
 def run_backtest(
@@ -283,6 +305,7 @@ def run_backtest(
     export_md: bool = False,
     record_history: bool = False,
     history_config_id: str | None = None,
+    benchmark_name: str | None = None,
 ):
     """
     Exécute le backtest complet avec fenêtre glissante.
@@ -303,6 +326,8 @@ def run_backtest(
         Collecte et exporte les rééquilibrages de la stratégie génétique.
     history_config_id : str, optional
         Identifiant utilisé pour nommer l'historique d'une configuration sélectionnée.
+    benchmark_name : str, optional
+        Libellé affiché pour la série de référence dans le rapport.
     
     Returns
     -------
@@ -375,6 +400,8 @@ def run_backtest(
         'maximum_sharpe': [],
         'benchmark': []
     }
+    transaction_cost_history = {strategy_name: [] for strategy_name in strategies}
+    rebalance_dates_history = {strategy_name: [] for strategy_name in strategies}
     transaction_cost_totals = {strategy_name: 0.0 for strategy_name in strategies}
     margin_financing_cost_totals = {strategy_name: 0.0 for strategy_name in strategies}
 
@@ -657,6 +684,8 @@ def run_backtest(
                 + (0.1 * dynamic_fee * (turnover ** 2))
             )
             transaction_cost_totals[strategy_name] += transaction_cost
+            transaction_cost_history[strategy_name].append(float(transaction_cost))
+            rebalance_dates_history[strategy_name].append(pd.Timestamp(dates[idx_rebalance]))
             if rebalance_records is not None and strategy_name == 'genetic_algorithm':
                 rebalance_records.append({
                     'run_id': run_id,
@@ -697,6 +726,8 @@ def run_backtest(
         # Le benchmark utilise directement les rendements de l'indice téléchargé.
         benchmark_returns = benchmark_simple_returns[out_sample_start:out_sample_end]
         turnover_history['benchmark'].append(0.0)
+        transaction_cost_history['benchmark'].append(0.0)
+        rebalance_dates_history['benchmark'].append(pd.Timestamp(dates[idx_rebalance]))
         for i, ret in enumerate(benchmark_returns):
             idx_out = out_sample_start + i
             if idx_out < n_periods:
@@ -786,12 +817,27 @@ def run_backtest(
             results['strategies'][strategy_name] = None
 
     if export_html:
+        genetic_metrics = results['strategies'].get('genetic_algorithm') or {}
+        selected_benchmark_name = (
+            benchmark_name
+            or SCENARIOS.get(scenario_name, {}).get('benchmark_name')
+            or 'Benchmark'
+        )
         generate_quantstats_tearsheet(
             portfolio_values,
             dates,
             len(out_of_sample_dates),
             scenario_name=scenario_name,
             rf=annual_rf_rate,
+            strategy_returns=net_daily_returns['genetic_algorithm'][config.LOOKBACK_WINDOW:config.LOOKBACK_WINDOW + len(out_of_sample_dates)],
+            benchmark_returns=net_daily_returns['benchmark'][config.LOOKBACK_WINDOW:config.LOOKBACK_WINDOW + len(out_of_sample_dates)],
+            weights_history=allocation_history['genetic_algorithm'] or None,
+            rebalance_dates=rebalance_dates_history['genetic_algorithm'],
+            turnover_history=turnover_history['genetic_algorithm'],
+            transaction_costs=transaction_cost_history['genetic_algorithm'],
+            transaction_cost_drag_bps_yr=genetic_metrics.get('Total Transaction Costs Drag (bps/yr)'),
+            margin_financing_drag_bps_yr=genetic_metrics.get('Total Margin Financing Drag (bps/yr)'),
+            benchmark_name=selected_benchmark_name,
         )
 
     if rebalance_records:

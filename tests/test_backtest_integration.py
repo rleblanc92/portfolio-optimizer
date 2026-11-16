@@ -298,14 +298,12 @@ def test_backtest_defaults_do_not_export(synthetic_market_data, monkeypatch, tmp
     with patch("main.preprocess_market_data", return_value=market_dict), \
          patch("main.asyncio.run", side_effect=lambda coro: coro.close()), \
          patch("main.generate_quantstats_tearsheet") as html_export, \
-         patch("main.qs.reports.html") as quantstats_html, \
          patch("matplotlib.pyplot.figure") as matplotlib_figure, \
          patch("main.open", create=True) as file_open:
         result = run_backtest(tickers, "2023-01-01", "2023-12-31", export_md=export_md)
 
     assert result['strategies']['genetic_algorithm'] is not None
     html_export.assert_not_called()
-    quantstats_html.assert_not_called()
     matplotlib_figure.assert_not_called()
     file_open.assert_not_called()
     assert all(not values for values in result['allocation_history'].values())
@@ -553,63 +551,89 @@ def test_audit_quantstats_tearsheet_scenario_hardcoding(isolated_main_cache, mon
     oos_length = 20
 
     def write_report(*args, **kwargs):
-        Path(kwargs['output']).write_text('<html>scenario report</html>', encoding='utf-8')
+        Path(kwargs['output_path']).write_text('<html>institutional dashboard</html>', encoding='utf-8')
 
-    with patch('main.qs.reports.html', side_effect=write_report) as mock_qs_html, \
-         patch('matplotlib.pyplot.close') as mock_close:
+    with patch('main.generate_institutional_report', side_effect=write_report) as report_writer:
         generate_quantstats_tearsheet(
             portfolio_values=portfolio_values,
             dates=dates,
             oos_length=oos_length,
             scenario_name="US_MegaTech_2015_2023",
             rf=0.042,
+            benchmark_name="S&P 500",
         )
 
-    mock_qs_html.assert_called_once()
-    assert mock_qs_html.call_args.kwargs['rf'] == 0.042
-    assert mock_qs_html.call_args.kwargs['output'] == 'outputs/tearsheets/best_strategy_tearsheet.html'
+    report_writer.assert_called_once()
+    assert report_writer.call_args.kwargs['risk_free_rate'] == 0.042
+    assert report_writer.call_args.kwargs['benchmark_name'] == "S&P 500"
+    assert report_writer.call_args.kwargs['output_path'] == Path('outputs/tearsheets/best_strategy_tearsheet.html')
     assert (tmp_path / 'outputs' / 'tearsheets').is_dir()
     assert (tmp_path / 'outputs' / 'tearsheets' / 'tearsheet_US_MegaTech_2015_2023.html').is_file()
-    mock_close.assert_called_once_with('all')
+    assert (tmp_path / 'docs' / 'tearsheet_US_MegaTech_2015_2023.html').is_file()
 
 
 @pytest.mark.contract
 def test_tearsheet_closes_figures_when_export_fails(monkeypatch, tmp_path):
     import matplotlib.pyplot as plt
-    from main import generate_quantstats_tearsheet
+    import reporting
 
     monkeypatch.chdir(tmp_path)
-    portfolio_values = {'genetic_algorithm': np.ones(100), 'benchmark': np.ones(100)}
-    dates = pd.date_range("2023-01-01", periods=100, freq="D")
+    returns = np.random.default_rng(42).normal(0.0002, 0.01, 130)
+    benchmark = np.random.default_rng(43).normal(0.0001, 0.009, 130)
+    dates = pd.date_range("2023-01-01", periods=130, freq="D")
 
-    def fail_after_opening_figure(*args, **kwargs):
-        plt.figure()
-        raise RuntimeError("export failed")
-
-    with patch('main.qs.reports.html', side_effect=fail_after_opening_figure):
+    with patch('reporting._render_svg', side_effect=RuntimeError("export failed")):
         with pytest.raises(RuntimeError, match="export failed"):
-            generate_quantstats_tearsheet(portfolio_values, dates, 20)
+            reporting.generate_institutional_report(
+                returns, benchmark, dates, output_path=tmp_path / 'failed.html'
+            )
     assert plt.get_fignums() == []
 
 
 @pytest.mark.contract
 def test_tearsheet_renders_html_and_closes_figures(monkeypatch, tmp_path):
     import matplotlib.pyplot as plt
-    from main import generate_quantstats_tearsheet
+    import reporting
 
     monkeypatch.chdir(tmp_path)
     dates = pd.date_range("2023-01-01", periods=360, freq="B")
     indices = np.arange(len(dates))
-    portfolio_values = {
-        'genetic_algorithm': np.cumprod(1.0 + 0.0004 + 0.006 * np.sin(indices / 3.0)),
-        'benchmark': np.cumprod(1.0 + 0.0003 + 0.004 * np.cos(indices / 4.0)),
-    }
+    strategy_returns = 0.0004 + 0.006 * np.sin(indices / 3.0)
+    benchmark_returns = 0.0003 + 0.004 * np.cos(indices / 4.0)
+    rebalance_dates = dates[::21]
+    turnover_history = np.linspace(0.05, 0.20, len(rebalance_dates))
     plt.close('all')
-    generate_quantstats_tearsheet(portfolio_values, dates, 108, rf=0.042)
+    reporting.generate_institutional_report(
+        strategy_returns,
+        benchmark_returns,
+        dates,
+        scenario_name="Synthetic Scenario",
+        benchmark_name="SPY",
+        risk_free_rate=0.042,
+        output_path=tmp_path / 'synthetic_dashboard.html',
+        weights_history=np.full((len(rebalance_dates), 3), 1.0 / 3.0),
+        rebalance_dates=rebalance_dates,
+        turnover_history=turnover_history,
+        transaction_costs=np.full(len(rebalance_dates), 0.0005),
+        transaction_cost_drag_bps_yr=12.5,
+        margin_financing_drag_bps_yr=2.0,
+    )
 
-    report = tmp_path / 'outputs' / 'tearsheets' / 'best_strategy_tearsheet.html'
+    report = tmp_path / 'synthetic_dashboard.html'
     assert report.is_file()
-    assert '<html' in report.read_text(encoding='utf-8').lower()
+    report_html = report.read_text(encoding='utf-8')
+    report_html_lower = report_html.lower()
+    assert '<html' in report_html
+    assert report_html.count('<svg') == 4
+    assert 'CVaR' in report_html
+    assert 'Turnover' in report_html
+    assert 'Excess Kurtosis' in report_html
+    assert 'SPY' in report_html
+    assert 'Annualized Transaction Cost Drag' in report_html
+    assert 'higher-order moments &amp; tail risk' in report_html_lower
+    assert 'rolling 6-month beta' in report_html_lower
+    assert 'omega' not in report_html_lower and 'kelly criterion' not in report_html_lower
+    assert 'href="https://' not in report_html_lower
     assert plt.get_fignums() == []
 
 
@@ -955,7 +979,9 @@ def test_scenarios_schema_integrity():
     assert 'AL.PA' not in french_scenario['tickers']
     assert french_scenario['rf_ticker'] == '^TNX'
     
-    required_fields = ["start_date", "end_date", "tickers", "benchmark_ticker", "rf_ticker"]
+    required_fields = [
+        "start_date", "end_date", "tickers", "benchmark_ticker", "benchmark_name", "rf_ticker",
+    ]
     
     for scenario_name, scenario_def in SCENARIOS.items():
         for field in required_fields:
@@ -970,6 +996,8 @@ def test_scenarios_schema_integrity():
         
         assert isinstance(scenario_def["benchmark_ticker"], str), \
             f"Scenario '{scenario_name}': benchmark_ticker must be string"
+        assert isinstance(scenario_def["benchmark_name"], str) and scenario_def["benchmark_name"].strip(), \
+            f"Scenario '{scenario_name}': benchmark_name must be a non-empty string"
         
         assert isinstance(scenario_def["rf_ticker"], str), \
             f"Scenario '{scenario_name}': rf_ticker must be string"

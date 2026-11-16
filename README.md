@@ -14,9 +14,9 @@
 
 This project implements a quantitative asset allocation and Out-of-Sample backtesting engine combining a multi-objective genetic metaheuristic compiled to machine code via **Numba LLVM (`@njit`)**, classical convex optimization benchmarks (Newton-Raphson, SLSQP), and an asynchronous LLM agent layer for macroeconomic regime detection and sentiment analysis.
 
-## Backtest Reports (QuantStats Tearsheets)
+## Backtest Reports (Custom Institutional Dashboards)
 
-Direct access to interactive QuantStats tearsheets via GitHub Pages:
+Direct access to self-contained out-of-sample dashboards via GitHub Pages:
 
 | Scenario / Universe | Time Horizon | Key Focus | Interactive Report |
 | :--- | :--- | :--- | :--- |
@@ -24,6 +24,12 @@ Direct access to interactive QuantStats tearsheets via GitHub Pages:
 | **Covid Crash & Recovery** | 2020 – 2021 | Extreme volatility & sharp drawdown shock | [View Tearsheet ↗](https://rleblanc92.github.io/portfolio-optimizer/tearsheet_FR_Covid_2020_2021.html) |
 | **Global Financial Crisis (GFC)** | 2007 – 2009 | Prolonged bear market & tail-risk behavior | [View Tearsheet ↗](https://rleblanc92.github.io/portfolio-optimizer/tearsheet_Global_GFC_2007_2009.html) |
 | **Global Multi-Asset** | 2024 | Cross-asset diversification & macro regime | [View Tearsheet ↗](https://rleblanc92.github.io/portfolio-optimizer/tearsheet_Global_MultiAsset_2024.html) |
+
+These custom dashboards highlight:
+
+* Tail-risk reporting for CVaR, skewness, and excess kurtosis. The stochastic fitness function directly optimizes skewness and excess kurtosis; CVaR is reported but is not currently an optimization objective.
+* Operational-friction audits with realized turnover on rebalance dates and combined L1 + L2 cost drag.
+* Strict comparison against an explicitly named, time-aligned benchmark (e.g., SPY or a 60/40 portfolio), rather than a generic placeholder.
 
 
 Designed to replicate real-world trading desk execution constraints, the engine explicitly models:
@@ -39,7 +45,7 @@ Optimisation de portefeuille AG/
 ├── market_data.py                   # Data ingestion, arithmetic returns, EMA 40/200 & Ledoit-Wolf
 ├── classic_optimization.py          # Convex benchmarks (Minimum Variance Newton-Raphson & Max Sharpe SLSQP)
 ├── main.py                          # Single backtest orchestrator (Rolling Window IS/OOS)
-├── general_tests.py                 # Multi-scenario parallel orchestrator (spawn) & QuantStats reporting
+├── general_tests.py                 # Multi-scenario parallel orchestrator (spawn) & custom dashboard reporting
 ├── genetic_algorithm/               # Vectorized evolution core compiled via Numba (@njit)
 │   ├── __init__.py
 │   ├── evolution.py                 # Evolutionary loop, in-place Fisher-Yates tournament & hyper-mutation
@@ -54,7 +60,7 @@ Optimisation de portefeuille AG/
 ├── tests/
 │   └── test_backtest_integration.py # Mathematical audit and system integration test suite (Pytest)
 ├── outputs/
-│   ├── tearsheets/                  # QuantStats Out-of-Sample HTML reports per scenario
+│   ├── tearsheets/                  # Custom Out-of-Sample HTML dashboards per scenario
 │   ├── logs/                        # Deduplicated execution logs (execution_debug.log)
 │   └── rebalance_history.parquet    # Detailed log of weights, regimes, transaction fees, and turnover
 ├── requirements.txt
@@ -165,22 +171,22 @@ A persistent SQLite store combined with an in-memory `_SENTIMENT_CACHE` keyed by
 
 * **In-Sample Period (`LOOKBACK_WINDOW = 252` days):** Parameter estimation for $\hat{\mu}$, $\Sigma_{\text{LW}}$, regime classification, and simultaneous model optimization (Multi-Objective GA, Minimum Variance Newton-Raphson, Maximum Sharpe SLSQP, and equal-weight $1/N$ benchmark).
 * **Out-of-Sample Period (`REBALANCE_FREQ = 21` days):** Application of frozen optimal weights over the subsequent test window. Between rebalancing events, portfolio weights drift daily according to realized asset returns, with daily deductions for margin financing and cash interest accruals. At each rebalancing boundary, transaction fees directly deduct from NAV.
-* **Traceability & Reporting (`general_tests.py`):** Multi-process execution (`multiprocessing` via `spawn`) with asynchronous log collection through a `QueueListener` routed to `outputs/logs/execution_debug.log`, full state exports to `outputs/rebalance_history.parquet` (with automatic `.csv` fallback), and **QuantStats** HTML tearsheet generation in `outputs/tearsheets/`.
+* **Traceability & Reporting (`general_tests.py`):** Multi-process execution (`multiprocessing` via `spawn`) with asynchronous log collection through a `QueueListener` routed to `outputs/logs/execution_debug.log`, full state exports to `outputs/rebalance_history.parquet` (with automatic `.csv` fallback), and custom institutional dashboard generation in `outputs/tearsheets/`.
 
 ### 5.2 Mathematical & System Audit Suite (`tests/test_backtest_integration.py`)
 
 The repository contains an isolated Pytest suite partitioned into interface contracts (`@pytest.mark.contract`) and quantitative vulnerability audits (`@pytest.mark.audit_flaw`):
 
 * **Zero Off-by-One & Look-Ahead Bias:** Verifies that the initial Out-of-Sample evaluation index aligns strictly with `dates[config.LOOKBACK_WINDOW]` with zero information leakage from future bars.
-* **Strict OOS Risk-Free Rate Isolation:** Asserts that reported Sharpe/Sortino ratios and the QuantStats `rf` argument ingest solely the average risk-free rate across the Out-of-Sample slice (preventing contamination from In-Sample regimes).
+* **Strict OOS Risk-Free Rate Isolation:** Asserts that reported Sharpe/Sortino ratios and the dashboard risk-free-rate input use solely the average rate across the Out-of-Sample slice (preventing contamination from In-Sample regimes).
 * **Non-Linear Frictions Audit:** Validates that under zero asset returns and zero risk-free rates in OOS, any deviation from the base allocation strictly degrades NAV ($V_{\text{final}} < 1.0$) exclusively due to transaction fees and margin costs.
-* **Matplotlib Figure Cleanup:** Enforces explicit memory deallocation (`plt.close('all')`) during consecutive QuantStats HTML tearsheet renderings.
+* **Matplotlib Figure Cleanup:** Enforces explicit memory deallocation (`plt.close('all')`) during consecutive HTML dashboard renderings.
 
 ---
 
 ## 6. Out-of-Sample Empirical Results & Quantitative Post-Mortem
 
-Out-of-Sample performance evaluation (252-day basis, net of all transaction fees and margin borrowing costs) extracted from QuantStats tearsheets across 4 distinct market regimes:
+Out-of-Sample performance evaluation (252-day basis, net of all transaction fees and margin borrowing costs) presented in the custom institutional dashboards across 4 distinct market regimes:
 
 | Scenario (OOS Period) | Risk-Free Rate (Avg. OOS $R_f$) | Cumulative Return (GA vs Bench $1/N$) | CAGR (GA vs Bench) | Sharpe Ratio (GA vs Bench) | Sortino Ratio (GA vs Bench) | Max Drawdown (GA vs Bench) | Ann. Volatility (GA vs Bench) |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -225,7 +231,7 @@ pip install -r requirements.txt
 ### Running Backtests & the Audit Suite
 
 ```bash
-# 1. Execute primary rolling backtest, generating QuantStats HTML tearsheets and Parquet logs
+# 1. Execute primary rolling backtest, generating custom HTML dashboards and Parquet logs
 python main.py
 
 # 2. Run the multi-scenario parallelized stress-test suite

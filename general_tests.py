@@ -213,6 +213,7 @@ def run_general_tests(scenarios, max_workers=2):
                 params['benchmark_ticker'], params.get('rf_ticker'),
                 scenario_name=config_id, export_html=True, export_md=False,
                 record_history=True, history_config_id=config_id,
+                benchmark_name=params.get('benchmark_name'),
             )
     else:
         logger.warning("Aucune configuration avec un Sharpe AG fini ; réexécution ignorée.")

@@ -21,6 +21,7 @@ SCENARIOS = {
         'end_date': '2023-12-31',
         'tickers': ['AAPL', 'MSFT', 'GOOGL', 'NVDA', 'TSLA'],
         'benchmark_ticker': 'SPY',
+        'benchmark_name': 'S&P 500',
         'rf_ticker': '^TNX',
         'objective': (
             "Mesurer la capture du momentum et de l'asymétrie positive "
@@ -32,6 +33,7 @@ SCENARIOS = {
         'end_date': '2021-12-31',
         'tickers': _FRENCH_TICKERS.copy(),
         'benchmark_ticker': '^FCHI',
+        'benchmark_name': 'CAC 40',
         'rf_ticker': '^TNX',
         'objective': (
             "Mesurer l'adaptation du régime macro au choc Covid et la "
@@ -46,6 +48,7 @@ SCENARIOS = {
             'GC=F', 'EURUSD=X', 'JPY=X',
         ],
         'benchmark_ticker': '^GSPC',
+        'benchmark_name': 'S&P 500',
         'rf_ticker': '^TNX',
         'objective': (
             "Tester la résilience du Sortino, l'épaisseur des queues et la "
@@ -61,6 +64,7 @@ SCENARIOS = {
             'GLD', 'DBC', 'VNQ', 'IBIT',
         ],
         'benchmark_ticker': 'SPY',
+        'benchmark_name': 'S&P 500',
         'rf_ticker': '^TNX',
     },
 }

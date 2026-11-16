@@ -14,7 +14,7 @@
 
 Ce projet implémente un moteur quantitatif d'allocation d'actifs et de backtesting *Out-of-Sample* combinant une métaheuristique génétique multi-objectifs compilée en code machine via **Numba LLVM (`@njit`)**, des méthodes d'optimisation convexe classiques (Newton-Raphson, SLSQP) et une couche d'agents LLM asynchrones pour la détection de régimes macroéconomiques et l'analyse de sentiment.
 
-## 📊 Rapports de Backtest (Tearsheets QuantStats)
+## 📊 Rapports de Backtest (Tableaux de bord institutionnels sur mesure)
 
 Accès direct aux rapports interactifs complets hébergés sur GitHub Pages :
 
@@ -24,6 +24,12 @@ Accès direct aux rapports interactifs complets hébergés sur GitHub Pages :
 | **Crash Covid & Rebond** | 2020 – 2021 | Choc de volatilité et récupération rapide | [Ouvrir le Tearsheet ↗](https://rleblanc92.github.io/portfolio-optimizer/tearsheet_FR_Covid_2020_2021.html) |
 | **Crise Financière (GFC)** | 2007 – 2009 | Résistance en marché baissier sévère et risque de queue | [Ouvrir le Tearsheet ↗](https://rleblanc92.github.io/portfolio-optimizer/tearsheet_Global_GFC_2007_2009.html) |
 | **Multi-Asset Global** | 2024 | Diversification multi-classes d'actifs et régimes macro | [Ouvrir le Tearsheet ↗](https://rleblanc92.github.io/portfolio-optimizer/tearsheet_Global_MultiAsset_2024.html) |
+
+Ces tableaux de bord sur mesure mettent en évidence :
+
+* Le reporting du risque extrême (CVaR, skewness et kurtosis en excès). La fonction de fitness stochastique optimise directement la skewness et le kurtosis en excès; la CVaR est reportée, mais n'est pas actuellement un objectif d'optimisation.
+* L'audit des frictions opérationnelles : turnover réalisé aux dates de rééquilibrage et impact combiné des coûts L1 + L2.
+* La comparaison stricte avec un benchmark explicitement nommé et aligné dans le temps (par exemple SPY ou un portefeuille 60/40), plutôt qu'un marqueur générique.
 
 
 Conçu pour répliquer les contraintes d'exécution réelles en salle des marchés, le moteur modélise explicitement :
@@ -45,7 +51,7 @@ Optimisation de portefeuille AG/
 ├── market_data.py                   # Pipeline de données, rendements arithmétiques, EMA 40/200 & Ledoit-Wolf
 ├── classic_optimization.py          # Benchmarks convexes (Minimum Variance Newton-Raphson & Max Sharpe SLSQP)
 ├── main.py                          # Orchestrateur de backtest unitaire (Rolling Window IS/OOS)
-├── general_tests.py                 # Orchestrateur multi-scénarios parallélisé (spawn) & reporting QuantStats
+├── general_tests.py                 # Orchestrateur multi-scénarios parallélisé (spawn) & rapports sur mesure
 ├── genetic_algorithm/               # Noyau d'évolution vectorisé et compilé JIT (Numba @njit)
 │   ├── __init__.py
 │   ├── evolution.py                 # Boucle évolutionnaire, tournoi Fisher-Yates in-place & hyper-mutation
@@ -60,7 +66,7 @@ Optimisation de portefeuille AG/
 ├── tests/
 │   └── test_backtest_integration.py # Suite d'audit mathématique et d'intégration système (Pytest)
 ├── outputs/
-│   ├── tearsheets/                  # Rapports HTML QuantStats Out-of-Sample par scénario
+│   ├── tearsheets/                  # Tableaux de bord HTML Out-of-Sample par scénario
 │   ├── logs/                        # Journaux d'exécution dédupliqués (execution_debug.log)
 │   └── rebalance_history.parquet    # Historique détaillé des poids, régimes, frais et turnovers
 ├── requirements.txt
@@ -222,7 +228,7 @@ Un cache persistant SQLite doublé d'un cache mémoire `_SENTIMENT_CACHE` index�
 * **Out-of-Sample (`REBALANCE_FREQ = 21` jours) :** Application des poids optimisés sur la fenêtre de test suivante. Entre deux dates de rééquilibrage, les poids dérivent quotidiennement selon les rendements réalisés des sous-jacents (*weight drift*), avec imputation quotidienne du taux sans risque et des coûts de financement sur marge. À chaque rééquilibrage, les frais de transaction impactent directement la NAV.
 
 
-* **Traçabilité & Reporting (`general_tests.py`) :** Exécution multi-processus (`multiprocessing` en mode `spawn`) avec agrégation asynchrone des journaux via `QueueListener` vers `outputs/logs/execution_debug.log`, export de la trajectoire complète dans `outputs/rebalance_history.parquet` (avec repli automatique vers `.csv`) et génération des rapports HTML **QuantStats** dans `outputs/tearsheets/`.
+* **Traçabilité & Reporting (`general_tests.py`) :** Exécution multi-processus (`multiprocessing` en mode `spawn`) avec agrégation asynchrone des journaux via `QueueListener` vers `outputs/logs/execution_debug.log`, export de la trajectoire complète dans `outputs/rebalance_history.parquet` (avec repli automatique vers `.csv`) et génération des tableaux de bord institutionnels sur mesure dans `outputs/tearsheets/`.
 
 
 
@@ -231,15 +237,15 @@ Un cache persistant SQLite doublé d'un cache mémoire `_SENTIMENT_CACHE` index�
 Le dépôt intègre une suite de tests Pytest divisée en contrats d'interface (`@pytest.mark.contract`) et audits de failles quantitatives (`@pytest.mark.audit_flaw`) entièrement isolés du réseau :
 
 * **Absence d'effet *Off-by-One* et de *Look-Ahead Bias* :** Vérifie que le premier jour *Out-of-Sample* coïncide exactement avec `dates[config.LOOKBACK_WINDOW]` et qu'aucune donnée future ne fuite dans la fenêtre d'estimation.
-* **Isolation stricte du Taux Sans Risque OOS :** Garantit que les ratios de Sharpe et Sortino finaux ainsi que le paramètre `rf` transmis à QuantStats utilisent exclusivement la moyenne du taux sans risque sur la période *Out-of-Sample* (aucune contamination par la période *In-Sample*).
+* **Isolation stricte du Taux Sans Risque OOS :** Garantit que les ratios de Sharpe et Sortino finaux et le taux sans risque du tableau de bord utilisent exclusivement la moyenne sur la période *Out-of-Sample* (aucune contamination par la période *In-Sample*).
 * **Audit des Frictions Non-Linéaires :** Vérifie qu'en présence de rendements d'actifs et d'un taux sans risque strictement nuls en OOS, tout écart par rapport à l'allocation initiale dégrade mécaniquement la NAV finale ($V_{\text{final}} < 1.0$) sous l'effet exact des coûts de transaction et de marge.
-* **Prévention des fuites mémoire Graphiques :** Contrôle la fermeture systématique des figures Matplotlib (`plt.close('all')`) lors de la génération séquentielle des Tearsheets HTML QuantStats.
+* **Prévention des fuites mémoire Graphiques :** Contrôle la fermeture systématique des figures Matplotlib (`plt.close('all')`) lors de la génération séquentielle des tableaux de bord HTML.
 
 ---
 
 ## 6. Résultats Empiriques Out-of-Sample & Post-Mortem Quantitatif
 
-Évaluation *Out-of-Sample* (base 252 jours/an, nette de frais de transaction et de financement) extraite des rapports QuantStats générés sur 4 régimes de marché distincts :
+Évaluation *Out-of-Sample* (base 252 jours/an, nette de frais de transaction et de financement) présentée dans les tableaux de bord sur mesure pour 4 régimes de marché distincts :
 
 | Scénario (Période OOS) | Taux Sans Risque ($R_f$ moy. OOS) | Rendement Cumulé (GA vs Bench $1/N$) | CAGR (GA vs Bench) | Ratio de Sharpe (GA vs Bench) | Ratio de Sortino (GA vs Bench) | Max Drawdown (GA vs Bench) | Volatilité Ann. (GA vs Bench) |
 | --- | --- | --- | --- | --- | --- | --- | --- |
